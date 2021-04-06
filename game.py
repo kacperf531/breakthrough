@@ -12,7 +12,7 @@ SCREEN_SIZE = (1800, 780)
 FPS = 60
 
 
-class MapGen(object):
+class MapGenerator(object):
     WIDTH, HEIGHT = 16, 16
 
     def __init__(self):
@@ -34,13 +34,36 @@ class MapGen(object):
                 vals[x, y] = self.noise(gen, nx, ny, freq)
         return vals
 
+    def gen_river(self, source: tuple, river):
+        ''' Generates a river on the map. '''
+        flood_chance = {}
+        for x in range(source[0] - 1, source[0] + 1):
+            if x < 0:
+                continue
+            for y in range(source[1] - 1, source[1] + 1):
+                if y < 0:
+                    continue
+                flood_chance[x, y] = random.randint(0, 20)
+        new_source = min(flood_chance)
+        if new_source == source or new_source[0] in [0, self.WIDTH] or new_source[1] in [0, self.HEIGHT]:
+            return river if river else [source]
+        river.append(new_source)
+        return(self.gen_river(new_source, river))
+
     def gen_map(self, noise):
         mapping = [["biome"]*self.HEIGHT for _ in range(self.WIDTH)]
+        rivers = []
         for x, y in noise:
             for biome, chance in [[key, TERRAIN[key]['chance']] for key in TERRAIN]:
                 if noise[x, y] < chance:
                     mapping[y][x] = biome
+                    if biome == 'Water':
+                        river = self.gen_river((x, y), [])
+                        rivers.append(river)
                     break
+        for river in rivers:
+            for point in river:
+                mapping[point[0]][point[1]] = 'Water'
         return mapping
 
 
@@ -97,7 +120,7 @@ class App(object):
 
     def make_map(self):
         tiles = pygame.sprite.LayeredUpdates()
-        self.mapping = MapGen()
+        self.mapping = MapGenerator()
         width, height = self.mapping.WIDTH, self.mapping.HEIGHT
         start_x, start_y = self.screen_rect.midtop
         start_x -= 100
@@ -141,8 +164,7 @@ class App(object):
 def main():
     pygame.init()
     pygame.display.set_mode(SCREEN_SIZE)
-    app = App()
-    app.main_loop()
+    App().main_loop()
     pygame.quit()
     sys.exit()
 
