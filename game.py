@@ -13,9 +13,10 @@ FPS = 60
 
 
 class MapGenerator(object):
-    WIDTH, HEIGHT = 16, 16
 
-    def __init__(self):
+    def __init__(self, map_size):
+        self.width = map_size[0]
+        self.height = map_size[1]
         self.seed = random.randrange(2**32)
         freq = random.randrange(5, 10)
         noise = self.gen_noise(simp.OpenSimplex(self.seed), freq)
@@ -27,10 +28,10 @@ class MapGenerator(object):
 
     def gen_noise(self, gen, freq=10):
         vals = {}
-        for y in range(self.WIDTH):
-            for x in range(self.HEIGHT):
-                nx = float(x)/self.WIDTH - 0.5
-                ny = float(y)/self.HEIGHT - 0.5
+        for y in range(self.width):
+            for x in range(self.height):
+                nx = float(x)/self.width - 0.5
+                ny = float(y)/self.height - 0.5
                 vals[x, y] = self.noise(gen, nx, ny, freq)
         return vals
 
@@ -45,13 +46,13 @@ class MapGenerator(object):
                     continue
                 flood_chance[x, y] = random.randint(0, 20)
         new_source = min(flood_chance)
-        if new_source == source or new_source[0] in [0, self.WIDTH] or new_source[1] in [0, self.HEIGHT]:
+        if new_source == source or new_source[0] in [0, self.width] or new_source[1] in [0, self.height]:
             return river if river else [source]
         river.append(new_source)
         return(self.gen_river(new_source, river))
 
     def gen_map(self, noise):
-        mapping = [["biome"]*self.HEIGHT for _ in range(self.WIDTH)]
+        mapping = [["biome"]*self.height for _ in range(self.width)]
         rivers = []
         for x, y in noise:
             for biome, chance in [[key, TERRAIN[key]['chance']] for key in TERRAIN]:
@@ -74,30 +75,32 @@ def get_randomized_height(range: list) -> int:
 
 
 class App(object):
-    def __init__(self, font_name: str = 'Arial', font_size: int = 32):
+    def __init__(self, map_size, tile_size, font_name: str = 'futura', font_size: int = 32):
         self.screen = pygame.display.get_surface()
         self.screen_rect = self.screen.get_rect()
         self.clock = pygame.time.Clock()
         self.done = False
-        self.tiles = self.make_map()
+        self.tile_size = tile_size
+        self.tiles = self.make_map(map_size)
         self.font = pygame.font.SysFont(font_name, font_size)
         self.cursor = CursorHighlight(font=self.font)
 
-    def make_map(self):
+    def make_map(self, map_size):
         tiles = pygame.sprite.LayeredUpdates()
-        self.mapping = MapGenerator()
-        width, height = self.mapping.WIDTH, self.mapping.HEIGHT
+        self.mapping = MapGenerator(map_size)
         start_x, start_y = self.screen_rect.midtop
         start_x -= 100
         start_y += 100
-        row_offset = -45, 22
-        col_offset = 57, 5
+        row_offset = [-0.69 * self.tile_size[0], 0.69 * self.tile_size[1]]
+        col_offset = [0.86 * self.tile_size[0], 0.16 * self.tile_size[1]]
+        width, height = map_size[0], map_size[1]
         for i in range(width):
             for j in range(height):
                 biome = self.mapping.terrain[i][j]
                 pos = (start_x + row_offset[0]*i + col_offset[0]*j,
                        start_y + row_offset[1]*i + col_offset[1]*j)
-                HexTile(pos, biome,get_randomized_height(TERRAIN[biome]['height']) , tiles)
+                HexTile(pos, biome, get_randomized_height(
+                    TERRAIN[biome]['height']), tiles, footprint_size=self.tile_size)
         return tiles
 
     def update(self):
@@ -129,7 +132,7 @@ class App(object):
 def main():
     pygame.init()
     pygame.display.set_mode(SCREEN_SIZE)
-    App().main_loop()
+    App(map_size=[8, 8], tile_size=[90, 45]).main_loop()
     pygame.quit()
     sys.exit()
 

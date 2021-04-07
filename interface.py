@@ -35,25 +35,21 @@ class CursorHighlight(pygame.sprite.Sprite):
         self.mask.fill()
         self.target = None
         self.biome = None
-        self.label_dict = self.make_labels()
         self.label_image = None
         self.label_rect = None
-
-        
-    def make_labels(self):
-        labels = {}
-        for biome in TERRAIN.keys():
-            labels[biome] = outline_render(biome, self.font, pygame.Color("white"), 2)
-        return labels
             
     def update(self, pos, tiles, screen_rect):
         self.rect.topleft = pos
         hits = pygame.sprite.spritecollide(self, tiles, 0, pygame.sprite.collide_mask)
         if hits:
+            for sprite in tiles.sprites():
+                sprite.dehighlight()
             true_hit = max(hits, key=lambda x: x.rect.bottom)
+            true_hit.highlight()
+            tiles.update()
             self.target = true_hit.rect.topleft
             self.biome = true_hit.biome
-            self.label_image = self.label_dict[self.biome]
+            self.label_image = outline_render(f'{self.biome}', self.font, pygame.Color("white"), 2)
             self.label_rect = self.label_image.get_rect(midbottom=pos)
             self.label_rect.clamp_ip(screen_rect)
         else:
@@ -61,6 +57,5 @@ class CursorHighlight(pygame.sprite.Sprite):
 
     def draw(self, surface):
         if self.biome:
-            surface.blit(self.image, self.target)
             surface.blit(self.label_image, self.label_rect)
       

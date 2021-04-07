@@ -1,37 +1,64 @@
 import pygame
 from constants import TERRAIN
 
+TRANSPARENT = (0, 0, 0, 0)
+
 
 class HexTile(pygame.sprite.Sprite):
-    FOOTPRINT_SIZE = (65, 32)
 
-    def __init__(self, pos, biome, height, *groups):
+    highlight_color = (50, 50, 200, 150)
+
+    def __init__(self, pos, biome, elevation, *groups, **kwargs):
         super(HexTile, self).__init__(*groups)
         self.color = pygame.Color(TERRAIN[biome]['color'])
-        self.height = height
-        self.image = self.make_tile(biome)
+        self.color_alt = [.3*col for col in self.color[:3]]
+        self.color_highlight = [.9*col for col in self.color[:3]]
+        self.elevation = elevation
+        self.footprint_size = kwargs['footprint_size']
+        x, y = self.footprint_size
+
+        
+        self.image = pygame.Surface(
+            (x, y + self.elevation)).convert_alpha()
+        self.draw_image()
+
         self.rect = self.image.get_rect(bottomleft=pos)
-        self.mask = self.make_mask()
         self.biome = biome
+        self.highlighted = False
+        self.was_highlighted = False
 
-    def make_tile(self, biome):
-        h = self.height
-        points = (8, 4), (45, 0), (64, 10), (57, 27), (20, 31), (0, 22)
-        bottom = [points[-1], points[2]] + [(x, y+h-1) for x, y in points[2:]]
-        image = pygame.Surface((65, 32+h)).convert_alpha()
-        image.fill((0, 0, 0, 0))
-        bottom_col = [.5*col for col in self.color[:3]]
-        pygame.draw.polygon(image, bottom_col, bottom)
-        pygame.draw.polygon(image, self.color, points)
-        pygame.draw.lines(image, pygame.Color("black"), 1, points, 2)
-        for start, end in zip(points[2:], bottom[2:]):
-            pygame.draw.line(image, pygame.Color("black"), start, end, 1)
-        pygame.draw.lines(image, pygame.Color("black"), 0, bottom[2:], 2)
-        return image
+    @property
+    def tile_area(self):
+        percentages = [(0.123, 0.125), (0.692, 0), (1, 0.313),
+                       (0.877, 0.844), (0.308, 0.969), (0, 0.688)]
+        return [(i*self.footprint_size[0], j*self.footprint_size[1]) for i, j in percentages]
 
-    def make_mask(self):
-        points = (8, 4), (45, 0), (64, 10), (57, 27), (20, 31), (0, 22)
-        temp_image = pygame.Surface(self.image.get_size()).convert_alpha()
-        temp_image.fill((0, 0, 0, 0))
-        pygame.draw.polygon(temp_image, pygame.Color("red"), points)
-        return pygame.mask.from_surface(temp_image)
+    def get_bottom_image(self):
+        bottom = [self.tile_area[-1], self.tile_area[2]] + \
+            [(x, y+self.elevation-1) for x, y in self.tile_area[2:]]
+        return bottom
+
+    def draw_image(self, highlighted=False):
+        bottom = self.get_bottom_image()
+        color = self.color if not highlighted else self.color_highlight
+        pygame.draw.polygon(self.image, self.color_alt, bottom)
+        pygame.draw.polygon(self.image, pygame.Color('black'), bottom, width=2)
+        pygame.draw.polygon(self.image, color, self.tile_area)
+        pygame.draw.polygon(self.image, pygame.Color(
+            'black'), self.tile_area, width=2)
+
+
+    def highlight(self):
+        self.highlighted = True
+
+    def dehighlight(self):
+        if self.highlighted:
+            self.highlighted = False
+            self.was_highlighted = True
+
+    def update(self):
+        if self.highlighted:
+            self.draw_image(highlighted=True)
+        elif self.was_highlighted:
+            self.draw_image(highlighted=False)
+            self.was_highlighted = False
