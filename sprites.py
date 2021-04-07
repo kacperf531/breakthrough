@@ -8,27 +8,31 @@ class HexTile(pygame.sprite.Sprite):
 
     highlight_color = (50, 50, 200, 150)
 
-    def __init__(self, pos, biome, elevation, *groups, **kwargs):
+    def __init__(self, pos, biome, country, elevation, *groups, **kwargs):
         super(HexTile, self).__init__(*groups)
+        
+        self.rect = self.image.get_rect(bottomleft=pos)
+        self.biome = biome
+        self.country = country
 
         self.views = ['territory', 'country']
         self.current_view = 0
 
         self.colors = {'territory': pygame.Color(TERRAIN[biome]['color']),
-                       'country': pygame.Color('Blue')}
+                       'country': {'France': pygame.Color('Blue'), 'Germany': pygame.Color('Red')}[self.country]}
+        self.descriptions = {'territory': self.biome}
         self.color_alt = [.3*col for col in self.color[:3]]
         self.elevation = elevation
         self.footprint_size = kwargs['footprint_size']
         x, y = self.footprint_size
 
-        self.country = 'France'
 
         self.image = pygame.Surface(
             (x, y + self.elevation)).convert_alpha()
         self.draw_image()
 
-        self.rect = self.image.get_rect(bottomleft=pos)
-        self.biome = biome
+
+        self.description = 
         self.highlighted = False
         self.was_highlighted = False
 
@@ -78,5 +82,7 @@ class HexTile(pygame.sprite.Sprite):
             self.draw_image(highlighted=False)
             self.was_highlighted = False
         if kwargs.get('toggle_view'):
+            if self.biome == 'Water':
+                pass
             self.toggle_view()
             self.draw_image()

@@ -100,7 +100,8 @@ class App(object):
                 biome = self.mapping.terrain[i][j]
                 pos = (start_x + row_offset[0]*i + col_offset[0]*j,
                        start_y + row_offset[1]*i + col_offset[1]*j)
-                HexTile(pos, biome, get_randomized_height(
+                country = 'France' if i * j > width * height /2 else 'Germany'
+                HexTile(pos, biome, country, get_randomized_height(
                     TERRAIN[biome]['height']), tiles, footprint_size=self.tile_size)
         return tiles
 
