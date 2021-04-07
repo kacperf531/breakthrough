@@ -2,6 +2,7 @@ import sys
 import random
 import pygame
 import opensimplex as simp
+from pygame.constants import K_SPACE
 
 from constants import TERRAIN
 from interface import CursorHighlight
@@ -120,6 +121,8 @@ class App(object):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.done = True
+            if event.type == pygame.KEYDOWN:
+                self.tiles.update(toggle_view=True)
 
     def main_loop(self):
         while not self.done:

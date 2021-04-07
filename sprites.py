@@ -10,14 +10,19 @@ class HexTile(pygame.sprite.Sprite):
 
     def __init__(self, pos, biome, elevation, *groups, **kwargs):
         super(HexTile, self).__init__(*groups)
-        self.color = pygame.Color(TERRAIN[biome]['color'])
+
+        self.views = ['territory', 'country']
+        self.current_view = 0
+
+        self.colors = {'territory': pygame.Color(TERRAIN[biome]['color']),
+                       'country': pygame.Color('Blue')}
         self.color_alt = [.3*col for col in self.color[:3]]
-        self.color_highlight = [.9*col for col in self.color[:3]]
         self.elevation = elevation
         self.footprint_size = kwargs['footprint_size']
         x, y = self.footprint_size
 
-        
+        self.country = 'France'
+
         self.image = pygame.Surface(
             (x, y + self.elevation)).convert_alpha()
         self.draw_image()
@@ -33,20 +38,30 @@ class HexTile(pygame.sprite.Sprite):
                        (0.877, 0.844), (0.308, 0.969), (0, 0.688)]
         return [(i*self.footprint_size[0], j*self.footprint_size[1]) for i, j in percentages]
 
+    @property
+    def color(self):
+        return self.colors[self.views[self.current_view]]
+
     def get_bottom_image(self):
         bottom = [self.tile_area[-1], self.tile_area[2]] + \
             [(x, y+self.elevation-1) for x, y in self.tile_area[2:]]
         return bottom
 
+    def toggle_view(self):
+        self.current_view = self.current_view + 1
+        if self.current_view >= len(self.views):
+            self.current_view = 0
+
     def draw_image(self, highlighted=False):
         bottom = self.get_bottom_image()
-        color = self.color if not highlighted else self.color_highlight
+        color_highlight = [.9*col for col in self.color[:3]]
+        color = self.color if not highlighted else color_highlight
+
         pygame.draw.polygon(self.image, self.color_alt, bottom)
         pygame.draw.polygon(self.image, pygame.Color('black'), bottom, width=2)
         pygame.draw.polygon(self.image, color, self.tile_area)
         pygame.draw.polygon(self.image, pygame.Color(
             'black'), self.tile_area, width=2)
-
 
     def highlight(self):
         self.highlighted = True
@@ -56,9 +71,12 @@ class HexTile(pygame.sprite.Sprite):
             self.highlighted = False
             self.was_highlighted = True
 
-    def update(self):
+    def update(self, **kwargs):
         if self.highlighted:
             self.draw_image(highlighted=True)
         elif self.was_highlighted:
             self.draw_image(highlighted=False)
             self.was_highlighted = False
+        if kwargs.get('toggle_view'):
+            self.toggle_view()
+            self.draw_image()
