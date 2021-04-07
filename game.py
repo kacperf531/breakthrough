@@ -5,9 +5,9 @@ import opensimplex as simp
 
 from constants import TERRAIN
 from interface import CursorHighlight
+from sprites import HexTile
 
 BACKGROUND = pygame.Color("darkslategray")
-TRANSPARENT = (0, 0, 0, 0)
 SCREEN_SIZE = (1800, 780)
 FPS = 60
 
@@ -67,45 +67,10 @@ class MapGenerator(object):
         return mapping
 
 
-def get_value_from_range(range: list) -> int:
+def get_randomized_height(range: list) -> int:
     ''' Returns random int from range in provided list of 2 ints. '''
     assert len(range) == 2, 'Provided list must contain exactly 2 elements!'
     return random.randint(*range)
-
-
-class HexTile(pygame.sprite.Sprite):
-    FOOTPRINT_SIZE = (65, 32)
-
-    def __init__(self, pos, biome, *groups):
-        super(HexTile, self).__init__(*groups)
-        self.color = pygame.Color(TERRAIN[biome]['color'])
-        self.height = get_value_from_range(TERRAIN[biome]['height'])
-        self.image = self.make_tile(biome)
-        self.rect = self.image.get_rect(bottomleft=pos)
-        self.mask = self.make_mask()
-        self.biome = biome
-
-    def make_tile(self, biome):
-        h = self.height
-        points = (8, 4), (45, 0), (64, 10), (57, 27), (20, 31), (0, 22)
-        bottom = [points[-1], points[2]] + [(x, y+h-1) for x, y in points[2:]]
-        image = pygame.Surface((65, 32+h)).convert_alpha()
-        image.fill(TRANSPARENT)
-        bottom_col = [.5*col for col in self.color[:3]]
-        pygame.draw.polygon(image, bottom_col, bottom)
-        pygame.draw.polygon(image, self.color, points)
-        pygame.draw.lines(image, pygame.Color("black"), 1, points, 2)
-        for start, end in zip(points[2:], bottom[2:]):
-            pygame.draw.line(image, pygame.Color("black"), start, end, 1)
-        pygame.draw.lines(image, pygame.Color("black"), 0, bottom[2:], 2)
-        return image
-
-    def make_mask(self):
-        points = (8, 4), (45, 0), (64, 10), (57, 27), (20, 31), (0, 22)
-        temp_image = pygame.Surface(self.image.get_size()).convert_alpha()
-        temp_image.fill(TRANSPARENT)
-        pygame.draw.polygon(temp_image, pygame.Color("red"), points)
-        return pygame.mask.from_surface(temp_image)
 
 
 class App(object):
@@ -132,7 +97,7 @@ class App(object):
                 biome = self.mapping.terrain[i][j]
                 pos = (start_x + row_offset[0]*i + col_offset[0]*j,
                        start_y + row_offset[1]*i + col_offset[1]*j)
-                HexTile(pos, biome, tiles)
+                HexTile(pos, biome,get_randomized_height(TERRAIN[biome]['height']) , tiles)
         return tiles
 
     def update(self):
