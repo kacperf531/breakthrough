@@ -34,7 +34,7 @@ class CursorHighlight(pygame.sprite.Sprite):
         self.mask = pygame.Mask((1,1))
         self.mask.fill()
         self.target = None
-        self.biome = None
+        self.description = None
         self.label_image = None
         self.label_rect = None
             
@@ -48,14 +48,14 @@ class CursorHighlight(pygame.sprite.Sprite):
             true_hit.highlight()
             tiles.update()
             self.target = true_hit.rect.topleft
-            self.biome = true_hit.biome
-            self.label_image = outline_render(f'{self.biome}', self.font, pygame.Color("white"), 2)
+            self.description = true_hit.description
+            self.label_image = outline_render(f'{self.description}', self.font, pygame.Color("white"), 2)
             self.label_rect = self.label_image.get_rect(midbottom=pos)
             self.label_rect.clamp_ip(screen_rect)
         else:
-            self.biome = None
+            self.description = None
 
     def draw(self, surface):
-        if self.biome:
+        if self.description:
             surface.blit(self.label_image, self.label_rect)
       
